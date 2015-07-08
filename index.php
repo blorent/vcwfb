@@ -29,6 +29,23 @@ function extractDate($datestr, $timestr)
 	return DateTime::createFromFormat('Y-m-d H:i', $year . '-' . $month . '-' . $day . ' ' . $timestr, new DateTimezone('Europe/Brussels'));
 }
 
+function get_portailaif_content($team)
+{
+	$club = '5083';
+	$url='http://portailaif.be/vbLstByEq.php';
+
+	$myvars = 'LstClb=' . $club . '&OLstClb=' . $club . '&LstEq=' . $team;
+	$ch = curl_init( $url );
+	curl_setopt( $ch, CURLOPT_POST, 1);
+	curl_setopt( $ch, CURLOPT_POSTFIELDS, $myvars);
+	curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
+	curl_setopt( $ch, CURLOPT_HEADER, 0);
+	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt( $ch, CURLOPT_REFERER, 'http://www.portailaif.be');
+	$response = curl_exec( $ch );
+	return $response;
+}
+
 function parsePage($content)
 {
 	$tags = array('titdiv', 'centre m9_0', 'droite td11', 'td11');
@@ -68,6 +85,10 @@ function parsePage($content)
 
 	foreach($all_matches as $match)
 	{
+		# Skip the "bye" matches
+		if (substr($match['home'], 0, 3) == "Bye" || substr($match['visitor'], 0, 3) == "Bye" )
+			continue;
+
 		# Remove (Weekend des)
 		$clean_date = substr($match['date'], digit_offset($match['date']));
 
@@ -89,40 +110,42 @@ function parsePage($content)
 	return $out_matches;
 }
 
+function highlight_team($team_name)
+{
+	if (substr($team_name, 0, 10) == "VC Walhain")
+		return "<b>Walhain</b>";
+	else
+		return $team_name;
+}
+
+function print_matches($matches_array)
+{
+	setlocale(LC_TIME, 'fr_BE');
+	$day_to_fr = array("Monday" => "Lundi", "Tuesday" => "Mardi", "Wednesday" => "Mercredi", "Thursday" => "Jeudi", "Friday" => "Vendredi", "Saturday" => "Samedi", "Sunday" => "Dimanche");
+	$day_to_fr_short = array("Monday" => "Lu", "Tuesday" => "Ma", "Wednesday" => "Me", "Thursday" => "Je", "Friday" => "Ve", "Saturday" => "Sa", "Sunday" => "Di");
+	foreach ($matches_array as $match)
+	{
+		echo "<p class='match'>" . $day_to_fr_short[$match['date']->format('l')] . "&nbsp;" . $match['date']->format('d/m/Y') ."&nbsp;&nbsp;&nbsp;" . $match['date']->format('H:i') . "<span class=match>" . highlight_team($match['home']) . " - " . highlight_team($match['visitor']) . "</span></p>";
+	}
+}
+
  ?>
 
  <div class="wrapper">
  <div class="maincontent">
 
-	<h1>Calendriers</h1>
-
 	<?php
 
-	# Get the corresponding page on portailaif
-	$club = '5083';
-	$team = 'N0BM/VC Walhain';
-	$url='http://portailaif.be/vbLstByEq.php';
+	$teams = array('N0BM/VC Walhain' => 'Ligue B', 'N2M/VC Walhain' => 'Nationale 2', 'P1M/VC Walhain C' => 'Provinciale 1');
 
-	$myvars = 'LstClb=' . $club . '&OLstClb=' . $club . '&LstEq=' . $team;
-	$ch = curl_init( $url );
-	curl_setopt( $ch, CURLOPT_POST, 1);
-	curl_setopt( $ch, CURLOPT_POSTFIELDS, $myvars);
-	curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
-	curl_setopt( $ch, CURLOPT_HEADER, 0);
-	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt( $ch, CURLOPT_REFERER, 'http://www.portailaif.be');
-	$response = curl_exec( $ch );
-
-	# Extract relevant info
-	$cal = parsePage($response);
-
-	# Display it
-	setlocale(LC_TIME, 'fr_BE');
-	$day_to_fr = array("Monday" => "Lundi", "Tuesday" => "Mardi", "Wednesday" => "Mercredi", "Thursday" => "Jeudi", "Friday" => "Vendredi", "Saturday" => "Samedi", "Sunday" => "Dimanche");
-	foreach ($cal as $match)
-	{
-		echo "<p class='match'>" . $day_to_fr[$match['date']->format('l')] . " " . $match['date']->format('d/m/Y H:i') . " : " . $match['home'] . " - " . $match['visitor'] . "</p>";
-	}
+	foreach ($teams as $team_id => $team_name) {
+		echo '<div class=calendar>';
+		echo '<h1 class=cal>Calendrier '. $team_name .'</h1>';
+		$page = get_portailaif_content($team_id);
+		$cal = parsePage($page);
+		print_matches($cal);
+		echo '</div>';
+	}	
 
 	?>
 

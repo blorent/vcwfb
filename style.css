@@ -1,3 +1,14 @@
+@import url(http://fonts.googleapis.com/css?family=Open+Sans);
+@import url(http://fonts.googleapis.com/css?family=Lato:100);
+/*
+Facebook color palette :
+dark blue : #3b5998	(59,89,152)
+royal blue : #8b9dc3	(139,157,195)
+light blue : #dfe3ee	(223,227,238)
+light grey : #f7f7f7	(247,247,247)
+white : #ffffff
+*/
+
 html, body {
 	background : white;
 	margin : none;
@@ -8,4 +19,36 @@ html, body {
 	width : 810px;
 	margin : 0px auto 50px auto;
 	background : #eee;
+	border-left : 1px solid ##dfe3ee;
+	border-right : 1px solid ##dfe3ee;
+}
+
+.maincontent {
+	padding : 25px;
+}
+
+/* Matches Calendars */
+.calendar {
+	margin-bottom : 30px;
+}
+
+h1.cal {
+	color : #3b5998;
+	border : none;
+	font-size : 32px;
+	font-family: "Lato", sans-serif;
+	margin : 0px 0px 20px 0px;
+}
+
+p.match {
+	color : #333;
+	border : none;
+	font-size : 12px;
+	font-family: "Verdana", "Arial", sans-serif;
+	margin : 10px 0px;
+	padding-left : 20px;
+}
+
+.match {
+	margin-left : 20px;
 }
