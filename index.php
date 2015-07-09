@@ -5,6 +5,49 @@
  </head>
  <body>
 
+ <script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '862096197158908',
+      xfbml      : true,
+      version    : 'v2.4'
+    });
+
+	// Place following code after FB.init call.
+	function onLogin(response) {
+	  if (response.status == 'connected') {
+	    FB.api('/me?fields=first_name', function(data) {
+	      var welcomeBlock = document.getElementById('fb-welcome');
+	      welcomeBlock.innerHTML = 'Hello, ' + data.first_name + '!';
+	    });
+	  }
+	}
+
+	FB.getLoginStatus(function(response) {
+	  // Check login status on load, and if the user is
+	  // already logged in, go directly to the welcome message.
+	  if (response.status == 'connected') {
+	    onLogin(response);
+	  } else {
+	    // Otherwise, show Login dialog first.
+	    FB.login(function(response) {
+	      onLogin(response);
+	    }, {scope: 'user_friends, email'});
+	  }
+	});
+};
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<!-- <h1 id="fb-welcome"></h1> -->
+
  <?php
 
  function digit_offset($text){
@@ -29,7 +72,23 @@ function extractDate($datestr, $timestr)
 	return DateTime::createFromFormat('Y-m-d H:i', $year . '-' . $month . '-' . $day . ' ' . $timestr, new DateTimezone('Europe/Brussels'));
 }
 
-function get_portailaif_content($team)
+function get_portailaif_results_content($team)
+{
+	$url='http://portailaif.be/vbClassement.php';
+
+	$myvars = 'div=' . $team . '&full=1';
+	$ch = curl_init( $url );
+	curl_setopt( $ch, CURLOPT_POST, 1);
+	curl_setopt( $ch, CURLOPT_POSTFIELDS, $myvars);
+	curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1);
+	curl_setopt( $ch, CURLOPT_HEADER, 0);
+	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt( $ch, CURLOPT_REFERER, 'http://www.portailaif.be');
+	$response = curl_exec( $ch );
+	return $response;
+}
+
+function get_portailaif_calendar_content($team)
 {
 	$club = '5083';
 	$url='http://portailaif.be/vbLstByEq.php';
@@ -120,10 +179,12 @@ function highlight_team($team_name)
 
 function find_upcoming_match($matches)
 {
+	$today = new DateTime("now", new DateTimeZone("Europe/Brussels"));
 	foreach ($matches as $match) {
 		if ($match['date'] > $today)
 			return $match;
 	}
+	return null;
 }
 
 function print_matches($matches_array)
@@ -131,40 +192,49 @@ function print_matches($matches_array)
 	setlocale(LC_TIME, 'fr_BE');
 	$day_to_fr = array("Monday" => "Lundi", "Tuesday" => "Mardi", "Wednesday" => "Mercredi", "Thursday" => "Jeudi", "Friday" => "Vendredi", "Saturday" => "Samedi", "Sunday" => "Dimanche");
 	$day_to_fr_short = array("Monday" => "Lu", "Tuesday" => "Ma", "Wednesday" => "Me", "Thursday" => "Je", "Friday" => "Ve", "Saturday" => "Sa", "Sunday" => "Di");
-	$today = new DateTime();
-	$first_match_found = false;
+	$next_match = find_upcoming_match($matches_array);
 	foreach ($matches_array as $match)
 	{
-		if ($first_match_found == false && $match['date'] > $today)
-			$class = 'match upcoming';
-		else
-			$class = 'match';
-
-		echo "<p class='".$class."'>" . $day_to_fr_short[$match['date']->format('l')] . " " . $match['date']->format('d/m/Y') ." " . $match['date']->format('H:i') . "<span class=match>" . highlight_team($match['home']) . " - " . highlight_team($match['visitor']) . "</span></p>";
+		echo "<p class='match" . (($match == $next_match)?' upcoming':'') . "'>" . $day_to_fr_short[$match['date']->format('l')] . " " . $match['date']->format('d/m/Y') ." " . $match['date']->format('H:i') . "<span class=match>" . highlight_team($match['home']) . " - " . highlight_team($match['visitor']) . "</span></p>";
 	}
 }
 
  ?>
 
  <div class="wrapper">
- <div class="maincontent">
+	 <div class="maincontent">
 
-	<?php
+	 	<div class="calendars">
 
-	$teams = array('N0BM/VC Walhain' => 'Ligue B', 'N2M/VC Walhain' => 'Nationale 2', 'P1M/VC Walhain C' => 'Provinciale 1');
+			<?php
 
-	foreach ($teams as $team_id => $team_name) {
-		echo '<div class=calendar>';
-		echo '<h1 class=cal>Calendrier '. $team_name .'</h1>';
-		$page = get_portailaif_content($team_id);
-		$cal = parsePage($page);
-		print_matches($cal);
-		echo '</div>';
-	}	
+			$teams = array('N0BM/VC Walhain' => 'Ligue B', 'N2M/VC Walhain' => 'Nationale 2', 'P1M/VC Walhain C' => 'Provinciale 1');
 
-	?>
+			foreach ($teams as $team_id => $team_name) {
+				echo "<div class='calendar'>";
+				echo "<h1 class='lato'>Calendrier ". $team_name ."</h1>";
+				$page = get_portailaif_calendar_content($team_id);
+				$cal = parsePage($page);
+				print_matches($cal);
+				echo "</div>";
+			}	
 
- </div>
+			?>
+
+		</div>
+
+		<div class='twitter_feed'>
+			<h1 class='lato'>Derniers tweets</h1>
+			<a class="twitter-timeline" href="https://twitter.com/vcwalhain" data-widget-id="619021792393461761">Tweets de @vcwalhain</a>
+			<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+		</div>
+
+	 </div>
+
+	 <div class='footer'>
+		<p>Copyright VCWalhain 2015</p>
+	</div>
+
  </div>
 
  </body>
