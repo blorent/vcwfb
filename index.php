@@ -118,14 +118,29 @@ function highlight_team($team_name)
 		return $team_name;
 }
 
+function find_upcoming_match($matches)
+{
+	foreach ($matches as $match) {
+		if ($match['date'] > $today)
+			return $match;
+	}
+}
+
 function print_matches($matches_array)
 {
 	setlocale(LC_TIME, 'fr_BE');
 	$day_to_fr = array("Monday" => "Lundi", "Tuesday" => "Mardi", "Wednesday" => "Mercredi", "Thursday" => "Jeudi", "Friday" => "Vendredi", "Saturday" => "Samedi", "Sunday" => "Dimanche");
 	$day_to_fr_short = array("Monday" => "Lu", "Tuesday" => "Ma", "Wednesday" => "Me", "Thursday" => "Je", "Friday" => "Ve", "Saturday" => "Sa", "Sunday" => "Di");
+	$today = new DateTime();
+	$first_match_found = false;
 	foreach ($matches_array as $match)
 	{
-		echo "<p class='match'>" . $day_to_fr_short[$match['date']->format('l')] . "&nbsp;" . $match['date']->format('d/m/Y') ."&nbsp;&nbsp;&nbsp;" . $match['date']->format('H:i') . "<span class=match>" . highlight_team($match['home']) . " - " . highlight_team($match['visitor']) . "</span></p>";
+		if ($first_match_found == false && $match['date'] > $today)
+			$class = 'match upcoming';
+		else
+			$class = 'match';
+
+		echo "<p class='".$class."'>" . $day_to_fr_short[$match['date']->format('l')] . " " . $match['date']->format('d/m/Y') ." " . $match['date']->format('H:i') . "<span class=match>" . highlight_team($match['home']) . " - " . highlight_team($match['visitor']) . "</span></p>";
 	}
 }
 
