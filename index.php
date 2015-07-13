@@ -44,6 +44,15 @@
      js.src = "//connect.facebook.net/en_US/sdk.js";
      fjs.parentNode.insertBefore(js, fjs);
    }(document, 'script', 'facebook-jssdk'));
+
+	window.fbAsyncInit = function() {
+	FB.Canvas.setSize();
+	}
+
+	// Do things that will sometimes call sizeChangeCallback()
+	function sizeChangeCallback() {
+	FB.Canvas.setSize();
+	}
 </script>
 
 <!-- <h1 id="fb-welcome"></h1> -->
