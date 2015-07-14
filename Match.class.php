@@ -2,6 +2,7 @@
 
 class Match
 {
+	public $division;
 	public $datetime;
 	public $home;
 	public $visitor;
@@ -9,7 +10,7 @@ class Match
 	public $home_result;
 	public $visitor_result;
 
-	public function __construct($datetime, $home, $visitor)
+	public function __construct($division, $datetime, $home, $visitor)
 	{
 		$this->datetime = $datetime;
 		$this->home = $home;
@@ -42,11 +43,6 @@ class Match
 	public function isPassed()
 	{
 		return ($this->datetime = new DateTIme('now', new DateTimeZone('Europe/Brussels')));
-	}
-
-	public function createSQLInsertStatement()
-	{
-		return "";
 	}
 }
 
