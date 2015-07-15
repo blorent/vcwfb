@@ -10,6 +10,9 @@ class Calendar
 	public $division_name;	// Name of the division to display
 	public $matches;
 
+	private $portailaif_getter = new PortailAIFParser();
+	private $sql_getter = new SQLInterface();
+
 	public function __construct($division_id, $division_name)
 	{
 		$this->division_id = $division_id;
@@ -20,9 +23,12 @@ class Calendar
 	private function getAllMatches()
 	{
 		// Test if what we have in cache is not too old
+		$today = new DateTime("now", new DateTimeZone("Europe/Brussels"));
+		if (GetSQLTableLastUpdate() < $today->sub(new DateInterval("P1D")))
+			$getter = new PortailAIFParser();
+		else
+			$getter = new 
 
-		// If yes, get the calendar from portailaif
-		$getter = new PortailAIFParser();
 		$getter->getAllMatchesForDivision($division_id);
 
 	}
