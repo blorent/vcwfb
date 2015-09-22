@@ -65,23 +65,6 @@ require_once 'Match.class.php';
  <?php
 
 
-function extractDate($datestr, $timestr)
-{
-	$split = explode(' ', $datestr);
-	$months = ['dummy', 'janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
-	$months_short = ['dummy', 'jan', 'fev', 'mars', 'avr', 'mai', 'juin', 'juillet', 'aout', 'sep', 'oct', 'nov', 'dec'];
-	$day = $split[0];
-	$month = array_search(strtr(strtolower($split[1]), chr(233), 'e'), $months);
-	# Probably short form
-	if ($month == FALSE)
-	{
-		$month = array_search(strtr(strtolower($split[1]), chr(233), 'e'), $months_short);
-	}
-	$year = $split[2];
-
-	return DateTime::createFromFormat('Y-m-d H:i', $year . '-' . $month . '-' . $day . ' ' . $timestr, new DateTimezone('Europe/Brussels'));
-}
-
 function highlight_team($team_name)
 {
 	if (substr($team_name, 0, 10) == "VC Walhain")
@@ -121,13 +104,14 @@ function print_matches($matches_array)
 
 			<?php
 
-			$teams = array('N0BM/VC Walhain' => 'Ligue B', 'N2M/VC Walhain' => 'Nationale 2', 'P1M/VC Walhain C' => 'Provinciale 1');
+			$parser = new PortailAIFParser();
+
+			$teams = array('N0BM/VC Walhain A' => 'Ligue B', 'N2M/VC Walhain B' => 'Nationale 2', 'P1M/VC Walhain C' => 'Provinciale 1');
 
 			foreach ($teams as $team_id => $team_name) {
 				echo "<div class='calendar'>";
 				echo "<h1 class='lato'>Calendrier ". $team_name ."</h1>";
-				$page = get_portailaif_calendar_content($team_id);
-				$cal = parsePage($page);
+				$cal = $parser->getAllMatchesForDivision($team_id);
 				print_matches($cal);
 				echo "</div>";
 			}	

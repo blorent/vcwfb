@@ -1,23 +1,35 @@
-<?php
+<?php 
 
-require_once 'MatchesRetriever.interface.php'
+require_once 'MatchesRetriever.interface.php';
 
 class PortailAIFParser implements MatchesRetriever
 {
 	public function getAllMatchesForDivision($division_id)
 	{
-		if !isset($this->division_id)
-			return false;
-
-		$page = get_portailaif_calendar_content($division);
-		return parsePage($page);
+		$page = $this->get_portailaif_calendar_content($division_id);
+		return $this->parse_page($page);
 	}
 
 
 
-	
+	private function extractDate($datestr, $timestr)
+	{
+		$split = explode(' ', $datestr);
+		$months = ['dummy', 'janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+		$months_short = ['dummy', 'jan', 'fev', 'mars', 'avr', 'mai', 'juin', 'juillet', 'aout', 'sep', 'oct', 'nov', 'dec'];
+		$day = $split[0];
+		$month = array_search(strtr(strtolower($split[1]), chr(233), 'e'), $months);
+		# Probably short form
+		if ($month == FALSE)
+		{
+			$month = array_search(strtr(strtolower($split[1]), chr(233), 'e'), $months_short);
+		}
+		$year = $split[2];
 
-	private $to_portailaif_code = array('N0BM' => 'N0BM/VC Walhain', 'N2M' => 'N2M/VC Walhain', 'P1M' => 'P1M/VC Walhain C');
+		return DateTime::createFromFormat('Y-m-d H:i', $year . '-' . $month . '-' . $day . ' ' . $timestr, new DateTimezone('Europe/Brussels'));
+	}
+
+	private $to_portailaif_code = array('N0BM' => 'N0BM/VC Walhain A', 'N2M' => 'N2M/VC Walhain B', 'P1M' => 'P1M/VC Walhain C');
 
 	private function get_portailaif_results_content($team)
 	{
@@ -58,9 +70,9 @@ class PortailAIFParser implements MatchesRetriever
 	    return isset($m[0]) ? strlen($m[0]) : false;
 	}
 
-	private function parsePage($content)
+	private function parse_page($content)
 	{
-		$tags = array('titdiv', 'centre m9_0', 'droite td11', 'td11');
+		$tags = array('titdiv', 'centre m9_x', 'centre m9_0', 'droite td11', 'td11');
 		$keys = array('date', 'day', 'time', 'home', 'visitor');
 
 		$all_matches = array();
@@ -95,27 +107,30 @@ class PortailAIFParser implements MatchesRetriever
 		$out_matches = array();
 		$match_idx = 0;
 
-		foreach($all_matches as $match)
+		foreach($all_matches as $this_match)
 		{
 			# Skip the "bye" matches
-			if (substr($match['home'], 0, 3) == "Bye" || substr($match['visitor'], 0, 3) == "Bye" )
+			if (substr($this_match['home'], 0, 3) == "Bye" || substr($this_match['visitor'], 0, 3) == "Bye" )
 				continue;
 
 			# Remove (Weekend des)
-			$clean_date = substr($match['date'], digit_offset($match['date']));
+			$clean_date = substr($this_match['date'], $this->digit_offset($this_match['date']));
 
 			# Get the date of the sunday of the specified weekend
-			$sunday = extractDate(trim(substr($clean_date, strpos($clean_date, '-') + 1)), $match['time']);
+			$sunday = $this->extractDate(trim(substr($clean_date, strpos($clean_date, '-') + 1)), $this_match['time']);
 
 			# Remove the necessary number of days
-			$match_date = $sunday->sub(new DateInterval('P'. array_search($match['day'], $offset_to_sunday) . 'D'));
+			$days_to_subtract = array_search($this_match['day'], $offset_to_sunday);
+			$interval_format = 'P' . (string) $days_to_subtract . 'D';
+			$interval = new DateInterval($interval_format);
+			$match_date = $sunday->sub($interval);
 
 			# Add the date to the output array
 			$out_matches[$match_idx]['date'] = $match_date;
 
 			# Add the teams playing to the output array
-			$out_matches[$match_idx]['home'] = $match['home'];
-			$out_matches[$match_idx]['visitor'] = $match['visitor'];
+			$out_matches[$match_idx]['home'] = $this_match['home'];
+			$out_matches[$match_idx]['visitor'] = $this_match['visitor'];
 			$match_idx++;
 		}
 
